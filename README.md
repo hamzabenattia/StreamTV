@@ -2,8 +2,12 @@
 
 - **Home**: big "Featured" banner, then rows you scroll sideways — Continue Watching, your favorite
   live channels, Popular Classic Movies, Sci-Fi & Horror, Film Noir, Comedy, Westerns, Classic TV Shows, Cartoons.
-- **Live TV**: load any M3U/M3U8 playlist. Categories on the left, channel logos on the right.
+- **Live TV**: a live **preview window** plays whichever channel you highlight. Filter by **Country**
+  (🇹🇳 Tunisia and Arab countries first) and **Category** (News, Sports, Movies, Kids, Religious…).
   While watching: ▲/▼ or CH+/CH− zaps channels. Hold OK on a channel to favorite it.
+- **Tunisian & Arabic**: Tunisian channels row on Home, plus "Tunisia" and "Arabic Cinema" movie rows.
+- **Subtitles**: Arabic (or French/English) picked automatically when available; CC button in the player.
+  Add a free OpenSubtitles API key in Settings to fetch Arabic subtitles for movies.
 - **Search**: searches movies/shows *and* your live channels.
 - **Settings**: paste a playlist URL, or pick one of the free public playlists from iptv-org.
 

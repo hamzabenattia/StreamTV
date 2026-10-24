@@ -15,17 +15,12 @@ import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.annotation.OptIn
 import androidx.media3.common.C
-import androidx.media3.common.MediaItem
-import androidx.media3.common.MediaMetadata
-import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
-import okhttp3.OkHttpClient
+import com.streamtv.app.data.Prefs
 
 @OptIn(UnstableApi::class)
 class PlayerActivity : ComponentActivity() {
@@ -34,7 +29,6 @@ class PlayerActivity : ComponentActivity() {
     private lateinit var infoText: TextView
     private val handler = Handler(Looper.getMainLooper())
     private val hideInfo = Runnable { infoText.visibility = View.GONE }
-    private val http = OkHttpClient.Builder().followRedirects(true).build()
 
     /** Many IPTV URLs have no ".m3u8" extension; on failure we retry once telling ExoPlayer it's HLS. */
     private var triedAsHls = false
@@ -51,6 +45,7 @@ class PlayerActivity : ComponentActivity() {
             setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
             setBackgroundColor(Color.BLACK)
             controllerShowTimeoutMs = 4000
+            setShowSubtitleButton(true)
         }
         infoText = TextView(this).apply {
             textSize = 26f
@@ -75,6 +70,7 @@ class PlayerActivity : ComponentActivity() {
         super.onStart()
         if (PlaybackQueue.current == null) return
         player = ExoPlayer.Builder(this).build().also {
+            it.trackSelectionParameters = StreamFactory.withLanguage(it.trackSelectionParameters, Prefs(this).subtitleLanguage)
             it.addListener(listener)
             playerView.player = it
         }
@@ -95,16 +91,7 @@ class PlayerActivity : ComponentActivity() {
         val player = player ?: return
         triedAsHls = asHls
 
-        val dataSource = OkHttpDataSource.Factory(http)
-            .setUserAgent(item.userAgent ?: DEFAULT_USER_AGENT)
-            .apply { item.referrer?.let { setDefaultRequestProperties(mapOf("Referer" to it)) } }
-        val mediaItem = MediaItem.Builder()
-            .setUri(item.url)
-            .setMediaMetadata(MediaMetadata.Builder().setTitle(item.title).build())
-            .apply { if (asHls) setMimeType(MimeTypes.APPLICATION_M3U8) }
-            .build()
-
-        player.setMediaSource(DefaultMediaSourceFactory(dataSource).createMediaSource(mediaItem), resumePositionMs)
+        player.setMediaSource(StreamFactory.mediaSource(item, asHls), resumePositionMs)
         player.prepare()
         player.playWhenReady = true
 
@@ -159,10 +146,5 @@ class PlayerActivity : ComponentActivity() {
     override fun onDestroy() {
         handler.removeCallbacks(hideInfo)
         super.onDestroy()
-    }
-
-    companion object {
-        private const val DEFAULT_USER_AGENT =
-            "Mozilla/5.0 (Linux; Android 12) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
     }
 }

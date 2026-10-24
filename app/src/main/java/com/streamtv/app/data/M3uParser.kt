@@ -44,16 +44,21 @@ object M3uParser {
                 else -> {
                     val channelName = name
                     if (channelName != null) {
-                        val group = (attrs["group-title"] ?: extGroup)
-                            ?.substringBefore(';')?.trim()
-                            ?.ifEmpty { null } ?: "Other"
+                        val categories = (attrs["group-title"] ?: extGroup).orEmpty()
+                            .split(';')
+                            .map { it.trim() }
+                            .filter { it.isNotEmpty() }
+                            .map { if (it.equals("Undefined", ignoreCase = true)) "Other" else it }
+                            .ifEmpty { listOf("Other") }
                         channels += Channel(
                             name = channelName,
                             url = line,
                             logo = attrs["tvg-logo"]?.ifBlank { null },
-                            group = group,
+                            group = categories.first(),
                             userAgent = userAgent ?: attrs["http-user-agent"] ?: attrs["user-agent"],
                             referrer = referrer ?: attrs["http-referrer"],
+                            country = countryFromId(attrs["tvg-id"]),
+                            categories = categories,
                         )
                     }
                     name = null; attrs = emptyMap(); extGroup = null; userAgent = null; referrer = null
@@ -61,5 +66,12 @@ object M3uParser {
             }
         }
         return channels
+    }
+
+    /** "ElWatania1.tn@SD" -> "tn". iptv-org uses "uk" for the United Kingdom. */
+    private fun countryFromId(id: String?): String? {
+        val code = id?.substringBefore('@')?.substringAfterLast('.', "")?.lowercase() ?: return null
+        if (code.length != 2 || !code.all { it in 'a'..'z' }) return null
+        return if (code == "uk") "gb" else code
     }
 }

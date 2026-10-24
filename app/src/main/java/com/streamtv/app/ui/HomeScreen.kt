@@ -65,16 +65,21 @@ fun HomeScreen(
         if (vm.recent.isNotEmpty()) {
             item(key = "recent") { MovieRow("Continue Watching", vm.recent, onOpen) }
         }
-        if (vm.channels.isNotEmpty()) {
+        val favs = vm.channelsIn(MainViewModel.FAVORITES)
+        if (favs.isNotEmpty()) {
+            item(key = "favorites") {
+                ChannelRow("Your Favorite Channels", favs, vm.favorites, onPlayChannel, vm::toggleFavorite)
+            }
+        }
+        val tunisian = vm.channelsFrom("tn")
+        if (tunisian.isNotEmpty()) {
+            item(key = "tunisia") {
+                ChannelRow("🇹🇳 Tunisian Channels · قنوات تونسية", tunisian, vm.favorites, onPlayChannel, vm::toggleFavorite)
+            }
+        }
+        if (favs.isEmpty() && tunisian.isEmpty() && vm.channels.isNotEmpty()) {
             item(key = "live") {
-                val favs = vm.channelsIn(MainViewModel.FAVORITES)
-                ChannelRow(
-                    title = if (favs.isNotEmpty()) "Your Favorite Channels" else "Live TV",
-                    channels = favs.ifEmpty { vm.channels.take(30) },
-                    favorites = vm.favorites,
-                    onPlay = onPlayChannel,
-                    onToggleFavorite = vm::toggleFavorite,
-                )
+                ChannelRow("Live TV", vm.channels.take(30), vm.favorites, onPlayChannel, vm::toggleFavorite)
             }
         }
         items(vm.shelves, key = { it.title }) { shelf -> MovieRow(shelf.title, shelf.movies, onOpen) }

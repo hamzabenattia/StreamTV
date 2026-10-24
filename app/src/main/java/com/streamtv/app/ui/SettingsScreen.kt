@@ -22,13 +22,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Button
+import androidx.tv.material3.FilterChip
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.OutlinedButton
 import androidx.tv.material3.Text
 import com.streamtv.app.MainViewModel
 
 /** Free, publicly available channels collected by the iptv-org project (github.com/iptv-org/iptv). */
+private val SUBTITLE_LANGUAGES = listOf("ar" to "العربية Arabic", "fr" to "Français", "en" to "English", "" to "Off")
+
 private val PRESETS = listOf(
+    "All channels (best for filters)" to "https://iptv-org.github.io/iptv/index.m3u",
+    "🇹🇳 Tunisia" to "https://iptv-org.github.io/iptv/countries/tn.m3u",
     "News" to "https://iptv-org.github.io/iptv/categories/news.m3u",
     "Movies" to "https://iptv-org.github.io/iptv/categories/movies.m3u",
     "Sports" to "https://iptv-org.github.io/iptv/categories/sports.m3u",
@@ -40,12 +45,12 @@ private val PRESETS = listOf(
     "Spanish" to "https://iptv-org.github.io/iptv/languages/spa.m3u",
     "USA" to "https://iptv-org.github.io/iptv/countries/us.m3u",
     "UK" to "https://iptv-org.github.io/iptv/countries/uk.m3u",
-    "Everything (very large)" to "https://iptv-org.github.io/iptv/index.m3u",
 )
 
 @Composable
 fun SettingsScreen(vm: MainViewModel) {
     var url by rememberSaveable { mutableStateOf(vm.playlistUrl) }
+    var subsKey by rememberSaveable { mutableStateOf(vm.openSubtitlesKey) }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -92,9 +97,46 @@ fun SettingsScreen(vm: MainViewModel) {
             }
         }
         item {
+            Column {
+                Text("Subtitles", style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold))
+                Text(
+                    "Preferred language — picked automatically when a channel or movie has it. Change it anytime with the CC button in the player.",
+                    color = Palette.Muted,
+                )
+                LazyRow(
+                    contentPadding = PaddingValues(vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    items(SUBTITLE_LANGUAGES) { (code, label) ->
+                        FilterChip(selected = vm.subtitleLanguage == code, onClick = { vm.updateSubtitleLanguage(code) }) {
+                            Text(label)
+                        }
+                    }
+                }
+                Text(
+                    "Movie subtitles from OpenSubtitles: create a free account at opensubtitles.com → Consumers → New consumer, then paste the API key here.",
+                    color = Palette.Muted,
+                )
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 12.dp)) {
+                    TvTextField(
+                        value = subsKey,
+                        onValueChange = { subsKey = it },
+                        placeholder = "OpenSubtitles API key (optional)",
+                        onSubmit = { vm.updateOpenSubtitlesKey(subsKey) },
+                        imeAction = ImeAction.Done,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Button(onClick = { vm.updateOpenSubtitlesKey(subsKey) }, modifier = Modifier.padding(start = 16.dp)) {
+                        Text(if (vm.openSubtitlesKey.isNotEmpty() && vm.openSubtitlesKey == subsKey.trim()) "Saved ✓" else "Save")
+                    }
+                }
+            }
+        }
+        item {
             Column(Modifier.fillMaxWidth().padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("Tips", style = MaterialTheme.typography.titleMedium)
                 Text("• Paste any M3U / M3U8 playlist URL you're allowed to use, e.g. from your TV provider.", color = Palette.Muted)
+                Text("• Live TV: use the Country and Category chips to filter; the highlighted channel plays in the preview.", color = Palette.Muted)
                 Text("• While watching live TV: ▲ / ▼ or CH+ / CH− switches channels.", color = Palette.Muted)
                 Text("• Hold OK on a channel to add it to Favorites; favorites show first on Home.", color = Palette.Muted)
                 Text("• Movies & shows come from the Internet Archive's public-domain collections.", color = Palette.Muted)

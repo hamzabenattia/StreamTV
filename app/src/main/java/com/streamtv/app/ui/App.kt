@@ -33,7 +33,6 @@ import androidx.tv.material3.Text
 import com.streamtv.app.MainViewModel
 import com.streamtv.app.data.Channel
 import com.streamtv.app.data.Movie
-import com.streamtv.app.data.PlayableItem
 import com.streamtv.app.player.PlaybackQueue
 import com.streamtv.app.player.PlayerActivity
 import kotlinx.coroutines.launch
@@ -53,20 +52,20 @@ fun App(vm: MainViewModel = viewModel()) {
         if (resolving) return
         scope.launch {
             resolving = true
-            val url = runCatching { vm.resolveStream(movie) }.getOrNull()
+            val item = runCatching { vm.prepareMovie(movie) }.getOrNull()
             resolving = false
-            if (url == null) {
+            if (item == null) {
                 Toast.makeText(context, "No playable video found for “${movie.title}”.", Toast.LENGTH_LONG).show()
             } else {
                 vm.markWatched(movie)
-                PlaybackQueue.set(listOf(PlayableItem(movie.title, url, isLive = false)), 0)
+                PlaybackQueue.set(listOf(item), 0)
                 context.openPlayer()
             }
         }
     }
 
     fun playChannel(channels: List<Channel>, index: Int) {
-        PlaybackQueue.set(channels.map { PlayableItem(it.name, it.url, isLive = true, it.userAgent, it.referrer) }, index)
+        PlaybackQueue.set(channels.map { it.toPlayable() }, index)
         context.openPlayer()
     }
 

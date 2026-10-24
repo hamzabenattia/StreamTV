@@ -6,8 +6,20 @@ class Prefs(context: Context) {
     private val sp = context.getSharedPreferences("streamtv", Context.MODE_PRIVATE)
 
     var playlistUrl: String
-        get() = sp.getString(KEY_PLAYLIST, DEFAULT_PLAYLIST) ?: DEFAULT_PLAYLIST
+        get() = sp.getString(KEY_PLAYLIST, null)
+            // Upgrade the old news-only default to the full list, which supports country filters.
+            ?.takeIf { it != OLD_DEFAULT_PLAYLIST } ?: DEFAULT_PLAYLIST
         set(value) = sp.edit().putString(KEY_PLAYLIST, value).apply()
+
+    /** ISO 639-1 code of the preferred subtitle language, or "" for subtitles off. */
+    var subtitleLanguage: String
+        get() = sp.getString(KEY_SUB_LANG, "ar") ?: "ar"
+        set(value) = sp.edit().putString(KEY_SUB_LANG, value).apply()
+
+    /** Free key from opensubtitles.com, used to fetch subtitles for movies. */
+    var openSubtitlesKey: String
+        get() = sp.getString(KEY_OPENSUBS, "") ?: ""
+        set(value) = sp.edit().putString(KEY_OPENSUBS, value.trim()).apply()
 
     var favorites: Set<String>
         get() = sp.getStringSet(KEY_FAVORITES, emptySet())?.toSet() ?: emptySet()
@@ -31,6 +43,9 @@ class Prefs(context: Context) {
         private const val KEY_PLAYLIST = "playlist_url"
         private const val KEY_FAVORITES = "favorites"
         private const val KEY_RECENT = "recent_movies"
-        const val DEFAULT_PLAYLIST = "https://iptv-org.github.io/iptv/categories/news.m3u"
+        private const val KEY_SUB_LANG = "subtitle_language"
+        private const val KEY_OPENSUBS = "opensubtitles_key"
+        private const val OLD_DEFAULT_PLAYLIST = "https://iptv-org.github.io/iptv/categories/news.m3u"
+        const val DEFAULT_PLAYLIST = "https://iptv-org.github.io/iptv/index.m3u"
     }
 }
