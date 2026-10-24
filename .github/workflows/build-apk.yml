@@ -8,14 +8,28 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
-      - uses: android-actions/setup-android@v3
-      - run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
-      - run: ./gradlew --no-daemon assembleRelease
+      - name: Build
+        run: |
+          set -o pipefail
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleRelease 2>&1 | tee build.log
+      - name: Report build errors
+        if: failure()
+        run: |
+          if [ -f build.log ]; then
+            grep -E '^e: |What went wrong|error:|Could not' -A4 build.log | head -c 7000 > errors.txt || true
+            [ -s errors.txt ] || tail -n 60 build.log > errors.txt
+          else
+            echo "Failed before Gradle started (setup step)." > errors.txt
+          fi
+          python3 -c "import sys;t=open('errors.txt').read();print('::error title=Build failed::'+t.replace('%','%25').replace('\r','').replace('\n','%0A'))"
       - uses: actions/upload-artifact@v4
         with:
           name: StreamTV-apk
