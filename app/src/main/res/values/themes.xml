@@ -1,0 +1,11 @@
+<resources>
+    <style name="Theme.StreamTV" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:colorPrimary">#E50914</item>
+        <item name="android:colorAccent">#E50914</item>
+    </style>
+
+    <style name="Theme.StreamTV.Player">
+        <item name="android:windowFullscreen">true</item>
+    </style>
+</resources>

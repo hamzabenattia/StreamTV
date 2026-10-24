@@ -1,0 +1,12 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+    <path android:fillColor="#141414" android:pathData="M0,0h320v180h-320z" />
+    <path android:fillColor="#E50914" android:pathData="M40,62h56a6,6 0,0 1,6 6v44a6,6 0,0 1,-6 6h-56a6,6 0,0 1,-6 -6v-44a6,6 0,0 1,6 -6z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M60,76l20,14l-20,14z" />
+    <!-- "STREAM TV" wordmark as simple blocks -->
+    <path android:fillColor="#FFFFFF" android:pathData="M120,74h170v12h-170z" />
+    <path android:fillColor="#E50914" android:pathData="M120,94h110v10h-110z" />
+</vector>
