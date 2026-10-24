@@ -22,6 +22,14 @@ runs automatically; open the run in the **Actions** tab and download the `Stream
 **Option B — Android Studio:** open this folder, wait for Gradle sync, then *Build → Build APK(s)*,
 or run `./gradlew assembleRelease`. The APK is at `app/build/outputs/apk/release/app-release.apk`.
 
+## In-app updates
+
+Settings → **Check for updates** (and an "Update available" button in the top bar). Every push to `main`
+is built, signed and published as a GitHub Release; the app downloads the newest APK and opens the installer.
+Requirements: the repo is public, and the repo has the `KEYSTORE_BASE64` and `KEYSTORE_PASSWORD` secrets
+(the same signing key every time, otherwise Android refuses to update). The first time, the TV asks you to
+allow StreamTV to "install unknown apps".
+
 ## Install it on your TV
 
 1. On the TV: *Settings → Device Preferences → About* → click **Build** 7 times to enable Developer options,

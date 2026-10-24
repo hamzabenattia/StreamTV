@@ -24,6 +24,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.SurfaceDefaults
@@ -79,7 +80,12 @@ fun App(vm: MainViewModel = viewModel()) {
             DetailScreen(current, loading = resolving, onPlay = { playMovie(current) }, onBack = { detail = null })
         } else {
             Column(Modifier.fillMaxSize()) {
-                TopBar(section, onSelect = { section = it })
+                TopBar(
+                    section,
+                    onSelect = { section = it },
+                    updateAvailable = vm.updateState is MainViewModel.UpdateState.Available,
+                    onUpdate = vm::installUpdate,
+                )
                 when (section) {
                     Section.Home -> HomeScreen(vm, homeListState, onOpen = { detail = it }, onPlayMovie = ::playMovie, onPlayChannel = ::playChannel)
                     Section.Live -> LiveTvScreen(vm, onPlayChannel = ::playChannel)
@@ -92,7 +98,7 @@ fun App(vm: MainViewModel = viewModel()) {
 }
 
 @Composable
-private fun TopBar(selected: Section, onSelect: (Section) -> Unit) {
+private fun TopBar(selected: Section, onSelect: (Section) -> Unit, updateAvailable: Boolean, onUpdate: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.padding(start = ScreenPadding, end = ScreenPadding, top = 24.dp, bottom = 12.dp),
@@ -109,6 +115,10 @@ private fun TopBar(selected: Section, onSelect: (Section) -> Unit) {
                     Text(s.label, modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp))
                 }
             }
+        }
+        if (updateAvailable) {
+            Spacer(Modifier.weight(1f))
+            Button(onClick = onUpdate) { Text("⬆ Update available") }
         }
     }
 }

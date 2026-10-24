@@ -13,6 +13,8 @@ import com.streamtv.app.data.PlayableItem
 import com.streamtv.app.data.Prefs
 import com.streamtv.app.data.Repository
 import com.streamtv.app.data.Shelf
+import com.streamtv.app.data.UpdateInfo
+import com.streamtv.app.data.Updater
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -84,9 +86,52 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     var searchError by mutableStateOf<String?>(null); private set
     private var searchJob: Job? = null
 
+    // ---- App updates ----
+    sealed interface UpdateState {
+        data object Idle : UpdateState
+        data object Checking : UpdateState
+        data object UpToDate : UpdateState
+        data class Available(val info: UpdateInfo) : UpdateState
+        data class Downloading(val info: UpdateInfo, val progress: Float) : UpdateState
+        data class NeedsPermission(val info: UpdateInfo) : UpdateState
+        data class Failed(val message: String) : UpdateState
+    }
+
+    private val updater = Updater(app, repo.http)
+    var updateState by mutableStateOf<UpdateState>(UpdateState.Idle); private set
+
+    /** [silent] is the automatic check at start-up: it only reports when an update exists. */
+    fun checkForUpdates(silent: Boolean = false) {
+        if (updateState is UpdateState.Checking || updateState is UpdateState.Downloading) return
+        viewModelScope.launch {
+            if (!silent) updateState = UpdateState.Checking
+            updateState = runCatching { updater.check() }.fold(
+                onSuccess = { info -> if (info != null) UpdateState.Available(info) else if (silent) UpdateState.Idle else UpdateState.UpToDate },
+                onFailure = { if (silent) UpdateState.Idle else UpdateState.Failed(it.message ?: "Update check failed") },
+            )
+        }
+    }
+
+    fun installUpdate() {
+        val info = when (val st = updateState) {
+            is UpdateState.Available -> st.info
+            is UpdateState.NeedsPermission -> st.info
+            else -> return
+        }
+        viewModelScope.launch {
+            updateState = UpdateState.Downloading(info, 0f)
+            runCatching { updater.download(info) { p -> updateState = UpdateState.Downloading(info, p) } }
+                .onSuccess { file ->
+                    updateState = if (updater.install(file)) UpdateState.Available(info) else UpdateState.NeedsPermission(info)
+                }
+                .onFailure { updateState = UpdateState.Failed(it.message ?: "Download failed") }
+        }
+    }
+
     init {
         loadPlaylist()
         loadMovies()
+        checkForUpdates(silent = true)
     }
 
     fun loadPlaylist(url: String = playlistUrl) {

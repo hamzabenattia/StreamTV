@@ -4,9 +4,15 @@ on:
   push:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-java@v5
@@ -16,7 +22,12 @@ jobs:
       - name: Build
         run: |
           set -o pipefail
-          echo "ANDROID_HOME=$ANDROID_HOME"
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/streamtv.jks"
+            export KEYSTORE_FILE="$RUNNER_TEMP/streamtv.jks"
+          else
+            echo "::warning title=Unsigned build::Add KEYSTORE_BASE64 and KEYSTORE_PASSWORD secrets so in-app updates work."
+          fi
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
           chmod +x gradlew
           ./gradlew --no-daemon assembleRelease 2>&1 | tee build.log
@@ -34,3 +45,14 @@ jobs:
         with:
           name: StreamTV-apk
           path: app/build/outputs/apk/release/app-release.apk
+      # The app's "Check for updates" button reads the latest release.
+      - name: Publish release
+        if: github.ref == 'refs/heads/main' && env.KEYSTORE_BASE64 != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+        run: |
+          cp app/build/outputs/apk/release/app-release.apk StreamTV.apk
+          gh release create "v${{ github.run_number }}" StreamTV.apk \
+            --title "StreamTV 1.${{ github.run_number }}" \
+            --notes "${COMMIT_MSG:-New build}"

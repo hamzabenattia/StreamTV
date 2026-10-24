@@ -26,6 +26,7 @@ import androidx.tv.material3.FilterChip
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.OutlinedButton
 import androidx.tv.material3.Text
+import com.streamtv.app.BuildConfig
 import com.streamtv.app.MainViewModel
 
 /** Free, publicly available channels collected by the iptv-org project (github.com/iptv-org/iptv). */
@@ -57,6 +58,7 @@ fun SettingsScreen(vm: MainViewModel) {
         contentPadding = PaddingValues(horizontal = ScreenPadding, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
+        item { UpdateSection(vm) }
         item {
             Text("Live TV playlist (M3U)", style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold))
         }
@@ -146,6 +148,31 @@ fun SettingsScreen(vm: MainViewModel) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Movie library", style = MaterialTheme.typography.titleMedium, modifier = Modifier.width(200.dp))
                 OutlinedButton(onClick = vm::loadMovies) { Text("Refresh") }
+            }
+        }
+    }
+}
+
+@Composable
+private fun UpdateSection(vm: MainViewModel) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text("App updates", style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold))
+        val status = when (val st = vm.updateState) {
+            MainViewModel.UpdateState.Idle -> "Installed version ${BuildConfig.VERSION_NAME}"
+            MainViewModel.UpdateState.Checking -> "Checking GitHub for a new version…"
+            MainViewModel.UpdateState.UpToDate -> "You have the latest version (${BuildConfig.VERSION_NAME})."
+            is MainViewModel.UpdateState.Available -> "New version available: ${st.info.versionName}  (installed: ${BuildConfig.VERSION_NAME})"
+            is MainViewModel.UpdateState.Downloading -> "Downloading ${st.info.versionName}… ${(st.progress * 100).toInt()}%"
+            is MainViewModel.UpdateState.NeedsPermission ->
+                "Allow StreamTV to install apps (Settings → Apps → Special app access → Install unknown apps), then press Install again."
+            is MainViewModel.UpdateState.Failed -> st.message
+        }
+        Text(status, color = Palette.Muted)
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            OutlinedButton(onClick = { vm.checkForUpdates() }) { Text("Check for updates") }
+            val st = vm.updateState
+            if (st is MainViewModel.UpdateState.Available || st is MainViewModel.UpdateState.NeedsPermission) {
+                Button(onClick = vm::installUpdate) { Text("Download & install") }
             }
         }
     }
